@@ -1,0 +1,1564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COSMIC CHAOS - Target Destruction Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial Bltargetack', sans-serif;
+            background: #000;
+            overflow: hidden;
+            cursor: none;
+        }
+        
+        #setupScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backdrop-filter: blur(12px) saturate(1.3);
+            background: linear-gradient(135deg,rgba(26,26,46,0.92),rgba(16,33,62,0.92),rgba(15,52,96,0.92));
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            color: white;
+        }
+        
+        .setup-container {
+            background: rgba(30,30,40,0.7);
+            border-radius: 36px;
+            box-shadow: 0 8px 48px 0 #ff6b6b, 0 2px 24px 0 #222 inset;
+            border: 2.5px solid #fff3;
+            padding: 48px 24px 36px 24px;
+            max-width: 420px;
+            width: 96vw;
+            margin: 0 auto;
+            position: relative;
+            transition: box-shadow 0.3s;
+            animation: fadeIn 0.7s;
+        }
+        
+        .setup-container h1 {
+            font-size: 2.2rem;
+            margin-bottom: 18px;
+            color: #ff6b6b;
+            text-shadow: 0 0 24px #ff6b6b, 0 0 8px #fff;
+            letter-spacing: 2px;
+        }
+        
+        .setup-container p {
+            font-size: 16px;
+            margin-bottom: 30px;
+            color: #ccc;
+        }
+        
+        #opponentSelect h2 {
+            font-size: 1.2rem;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        #opponentBtns button.control-btn {
+            border-radius: 28px;
+            font-size: 1.15rem;
+            padding: 14px 32px;
+            background: linear-gradient(45deg,#232526,#414345);
+            border: 2.5px solid #ff6b6b;
+            color: #fff;
+            box-shadow: 0 0 0 #ff6b6b;
+            transition: all 0.22s;
+            outline: none;
+            position: relative;
+            overflow: hidden;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        #opponentBtns button.control-btn.selected,
+        #opponentBtns button.control-btn:active,
+        #opponentNext.control-btn,
+        #startGame,
+        #gunBtn,
+        #rageBtn {
+            background: #ff6b6b;
+            color: #fff;
+            box-shadow: 0 0 24px #ff6b6b,0 0 8px #fff;
+        }
+        #gunBtn { background: #1e90ff; }
+        #rageBtn { background: #ffe066; color: #b30000; }
+        #opponentBtns button.control-btn:hover,
+        #opponentNext.control-btn:hover,
+        #startGame:hover {
+            box-shadow: 0 0 48px #ff6b6b,0 0 16px #fff;
+            filter: brightness(1.13);
+        }
+        @media (max-width: 600px) {
+            .setup-container, .hud, .controls, #opponentBtns button, #opponentNext, #startGame, #gunBtn, #rageBtn {
+                font-size: 1rem;
+                padding: 10px 8vw;
+                width: 98vw;
+                max-width: 99vw;
+                margin: 6px auto;
+            }
+            #opponentBtns {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 12px;
+            }
+            .hud { flex-direction: column; align-items: center; left: 0; right: 0; top: 8px; }
+            .multi-hit-counter { right: 8px; top: 60px; bottom: unset; }
+            .rage-meter { right: 8px; top: 20px; bottom: unset; }
+            #nameInput {
+                height: 100px;
+                font-size: 1rem;
+                padding: 12px;
+            }
+            #gameGuide {
+                font-size: 0.95rem;
+                padding: 18px 15px 12px 15px;
+            }
+        }
+        
+        #gameGuide {
+            background: rgba(30,30,40,0.85);
+            border-radius: 22px;
+            box-shadow: 0 0 32px #4ecdc4,0 0 12px #fff;
+            color: #ffdada;
+            margin-bottom: 18px;
+            padding: 22px 18px 16px 18px;
+            font-size: 1.08rem;
+            line-height: 1.8;
+            border: 2px solid #4ecdc4;
+            animation: fadeIn 0.7s;
+        }
+        
+        #nameInputTip {
+            color: #ff6b6b;
+            font-size: 1.12rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        
+        #nameInput {
+            width: 100%;
+            height: 120px;
+            background: rgba(255,255,255,0.10);
+            border: 2.5px solid #4ecdc4;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 1.12rem;
+            padding: 16px;
+            resize: none;
+            margin-bottom: 18px;
+            box-shadow: 0 0 16px #4ecdc4 inset;
+            transition: border 0.2s,box-shadow 0.2s;
+        }
+        
+        #nameInput:focus {
+            border: 2.5px solid #ff6b6b;
+            box-shadow: 0 0 32px #ff6b6b;
+            outline: none;
+        }
+        
+        #startGame {
+            padding: 16px 44px;
+            background: #ff6b6b; color: #fff;
+            border: none;
+            border-radius: 28px;
+            font-weight: bold;
+            font-size: 1.18rem;
+            cursor: pointer;
+            transition: all 0.22s;
+            box-shadow: 0 0 32px #4ecdc4,0 0 12px #fff;
+            margin-top: 10px;
+        }
+        
+        #startGame:hover {
+            transform: scale(1.09);
+            box-shadow: 0 0 60px #ff6b6b,0 0 20px #fff;
+        }
+        
+        #gameCanvas {
+            display: none;
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000 100%);
+            cursor: none;
+        }
+        
+        .hud {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 1000;
+            pointer-events: none;
+        }
+        
+        .hud-item {
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 16px;
+            border: 2px solid #ff6b6b;
+            box-shadow: 0 0 20px #ff6b6b;
+            animation: hudGlow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes hudGlow {
+            0% { box-shadow: 0 0 20px #ff6b6b; }
+            100% { box-shadow: 0 0 40px #ff6b6b, 0 0 60px #ff6b6b; }
+        }
+        
+        .power-meter {
+            position: fixed;
+            left: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #4ecdc4;
+            border-radius: 10px;
+            z-index: 1000;
+        }
+        
+        .power-fill {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(to top, #4ecdc4, #45b7d1, #6c5ce7, #fd79a8);
+            border-radius: 8px;
+            transition: height 0.1s ease;
+        }
+        
+        .crosshair {
+            position: fixed;
+            pointer-events: none;
+            z-index: 999;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #ff6b6b;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 20px #ff6b6b;
+            animation: crosshairPulse 1s ease-in-out infinite;
+        }
+        
+        @keyframes crosshairPulse {
+            0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.7; }
+        }
+        
+        .destruction-text {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 72px;
+            font-weight: bold;
+            color: #ff6b6b;
+            text-shadow: 0 0 20px #ff6b6b;
+            pointer-events: none;
+            z-index: 998;
+            opacity: 0;
+            animation: explosionText 2s ease-out;
+        }
+        
+        @keyframes explosionText {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0) rotate(-180deg); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.5) rotate(0deg); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(1) rotate(180deg); }
+        }
+        
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+        }
+        
+        .control-btn {
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
+        }
+        
+        .control-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 30px rgba(255, 107, 107, 0.8);
+        }
+        
+        .shake {
+            animation: screenShake 0.8s ease-in-out;
+        }
+        
+        @keyframes screenShake {
+            0%, 100% { transform: translateX(0); }
+            10% { transform: translateX(-8px); }
+            20% { transform: translateX(8px); }
+            30% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            50% { transform: translateX(-8px); }
+            60% { transform: translateX(8px); }
+            70% { transform: translateX(-8px); }
+            80% { transform: translateX(8px); }
+            90% { transform: translateX(-8px); }
+        }
+        
+        /* 慢动作效果 */
+        .slow-motion * {
+            animation-duration: calc(var(--slow-speed, 1) * 1s) !important;
+            transition-duration: calc(var(--slow-speed, 1) * 1s) !important;
+        }
+        
+        .rage-meter {
+            position: fixed;
+            top: 20px;
+            right: 240px;
+            width: 200px;
+            height: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .rage-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(to right, #ff6b6b, #4ecdc4);
+            transition: width 0.1s ease;
+        }
+        
+        .multi-hit-counter {
+            position: fixed;
+            top: 60px;
+            right: 20px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .red-rage {
+            filter: hue-rotate(-20deg) brightness(1.1) saturate(1.8) drop-shadow(0 0 40px #ff1e1e);
+            background: #2d0000 !important;
+        }
+        
+        @keyframes flashCombo {
+            0% { box-shadow: 0 0 20px #ff6b6b; color: #fff; }
+            100% { box-shadow: 0 0 40px #fff; color: #ff6b6b; }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* 马来西亚风格色彩与气泡美化 */
+        .dialog-bubble {
+            min-width: 200px;
+            max-width: 340px;
+            min-height: 54px;
+            background: linear-gradient(135deg,rgba(255,255,255,0.97) 80%,#ffe066 100%);
+            border-radius: 28px 28px 36px 36px;
+            box-shadow: 0 6px 36px #ff6b6b,0 0 12px #ffe066,0 0 8px #fff;
+            border: 2.5px solid #1e90ff;
+            color: #222;
+            font-size: 1.32rem;
+            font-family: 'Arial Black',sans-serif;
+            font-weight: bold;
+            line-height: 1.8;
+            padding: 22px 20px 18px 20px;
+            text-align: center;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%) scale(1);
+            z-index: 1002;
+            animation: fadeIn 0.5s, bubblePop 0.5s;
+            overflow-y: auto;
+            word-break: break-all;
+            pointer-events: none;
+            border-bottom: 5px solid #ffe066;
+        }
+        @keyframes bubblePop {
+            0% { transform: translateX(-50%) scale(0.7); }
+            60% { transform: translateX(-50%) scale(1.12); }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div id="setupScreen">
+        <div class="setup-container">
+            <h1>🎯 TARGET DESTRUCTION SIMULATOR</h1>
+            <div id="playerTypeSelect" style="margin-bottom:24px;">
+                <h2>请选择你的身份：</h2>
+                <div style="display:flex;gap:16px;justify-content:center;">
+                    <button class="control-btn" data-player="student">大学生</button>
+                    <button class="control-btn" data-player="worker">上班族</button>
+                </div>
+            </div>
+            <div id="opponentSelect" style="margin-bottom:24px;display:none;">
+                <h2>请选择对手类型（可多选）：</h2>
+                <div id="opponentBtns" style="display:flex;gap:16px;justify-content:center;"></div>
+                <button id="opponentNext" class="control-btn" style="margin-top:18px;">下一步</button>
+            </div>
+            <div id="gameGuide" style="text-align:left;font-size:15px;color:#ffdada;background:rgba(0,0,0,0.5);padding:16px;border-radius:12px;margin-bottom:18px;display:none;">
+                <strong>玩法说明：</strong><br>
+                - 选择对手类型后，输入多个名字（每行一个），点击开始。<br>
+                - 鼠标左键：基础攻击。<br>
+                - 鼠标右键：散弹攻击（5发）。<br>
+                - 鼠标双击：超级爆炸。<br>
+                - 击中目标增加愤怒值，愤怒满可开启愤怒模式（子弹威力翻倍、爆炸更猛、自动多发）。<br>
+                - 机关枪模式：自动疯狂扫射。<br>
+                - 连击计数器：连续击中显示连击数，连击高粒子更壮观。<br>
+                - 不同对手有不同台词和行为，前任会追你，老板更难打。<br>
+                - 目标被击中会说话，死亡有毁灭台词。<br>
+                - 右侧有怒气槽和连击显示。<br>
+            </div>
+            <p id="nameInputTip" style="display:none;">请输入对手名字（每行一个）：</p>
+            <textarea id="nameInput" style="display:none;" placeholder=""></textarea>
+            <button id="startGame" style="display:none;" onclick="startGame()">🚀 BEGIN DESTRUCTION</button>
+        </div>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="hud">
+        <div class="hud-item" id="score">🌟 DESTRUCTION SCORE: 0</div>
+        <div class="hud-item" id="combo">💥 COMBO: x1</div>
+        <div class="hud-item" id="targets">🎯 TARGETS: 0</div>
+    </div>
+    
+    <div class="crosshair" id="crosshair"></div>
+    
+    <div class="controls">
+        <button class="control-btn" onclick="spawnTargetWave()">🎯 TARGET WAVE</button>
+        <button class="control-btn" onclick="createBlackHole()">🕳️ BLACK HOLE</button>
+        <button class="control-btn" onclick="triggerMegaBlast()">💥 MEGA BLAST</button>
+        <button class="control-btn" onclick="resetSimulation()">🔄 NEW SIMULATION</button>
+    </div>
+
+    <div class="rage-meter">
+        <div class="rage-fill" id="rageFill"></div>
+    </div>
+    <div class="multi-hit-counter" id="multiHitCounter" style="display:none;">连击：0</div>
+
+    <div style="position:fixed; right:20px; bottom:20px; z-index:2001; display:flex; flex-direction:column; gap:16px;">
+        <button id="rageBtn" class="control-btn" style="background:linear-gradient(45deg,#ff6b6b,#ff1e1e);">😡 愤怒模式</button>
+        <button id="gunBtn" class="control-btn" style="background:linear-gradient(45deg,#4ecdc4,#1e90ff);">🔫 机关枪模式</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let targetNames = [];
+        let usedNames = [];
+        
+        const gameState = {
+            score: 0,
+            combo: 1,
+            isCharging: false,
+            mouseX: 0,
+            mouseY: 0,
+            targets: [],
+            projectiles: [],
+            particles: [],
+            blackHoles: [],
+            explosions: [],
+            stars: [],
+            isPlaying: false,
+            spaceDebris: [],
+            ufos: [],
+            planets: [],
+            powerUps: {
+                shield: false,
+                speed: false
+            },
+            rage: 0,
+            multiHitCount: 0,
+            multiHitTimer: 0,
+            isRageMode: false,
+            rageModeTimer: 0,
+            isGunMode: false,
+            gunModeTimer: 0,
+            gunModeFireCD: 0
+        };
+        
+        function startGame() {
+            const input = document.getElementById('nameInput').value.trim();
+            if (!input) {
+                alert('Please enter at least one target name!');
+                return;
+            }
+            
+            targetNames = input.split('\n').filter(name => name.trim()).map(name => name.trim());
+            usedNames = [];
+            
+            if (targetNames.length === 0) {
+                alert('Please enter valid target names!');
+                return;
+            }
+            
+            document.getElementById('setupScreen').style.display = 'none';
+            document.getElementById('gameCanvas').style.display = 'block';
+            document.body.style.cursor = 'none';
+            
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            initializeGame();
+            gameState.isPlaying = true;
+            gameLoop();
+        }
+        
+        function initializeGame() {
+            // Initialize starfield
+            gameState.stars = [];
+            for (let i = 0; i < 200; i++) {
+                gameState.stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2 + 0.5,
+                    twinkle: Math.random() * Math.PI * 2
+                });
+            }
+            
+            // Spawn initial targets
+            for (let i = 0; i < Math.min(10, targetNames.length); i++) {
+                spawnNamedTarget();
+            }
+        }
+        
+        class Target {
+            constructor(x, y, size, color, name, velocity = {x: 0, y: 0}) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.color = color;
+                this.name = name;
+                this.velocity = velocity;
+                this.type = this.determineType(name);
+                this.health = this.getInitialHealth();
+                this.shape = Target.randomShape();
+                this.rotation = 0;
+                this.nameOffset = 0;
+                this.dialogQueue = [];
+                this.dialogBubble = null;
+                this.dialogTimer = 0;
+                this.hitTimer = 0;
+                this.hitColor = '#ffffff';
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 20;
+
+                ctx.beginPath();
+                switch (this.shape) {
+                    case 'circle':
+                        ctx.arc(0, 0, this.size / 2, 0, Math.PI * 2);
+                        break;
+                    case 'square':
+                        ctx.rect(-this.size / 2, -this.size / 2, this.size, this.size);
+                        break;
+                    case 'triangle':
+                        ctx.moveTo(0, -this.size / 2);
+                        ctx.lineTo(this.size / 2, this.size / 2);
+                        ctx.lineTo(-this.size / 2, this.size / 2);
+                        ctx.closePath();
+                        break;
+                    case 'hex':
+                        for (let i = 0; i < 6; i++) {
+                            const angle = (i * Math.PI / 3);
+                            ctx.lineTo(this.size / 2 * Math.cos(angle), this.size / 2 * Math.sin(angle));
+                        }
+                        ctx.closePath();
+                        break;
+                    case 'star':
+                        const outerRadius = this.size / 2;
+                        const innerRadius = outerRadius / 2.5;
+                        for (let i = 0; i < 5; i++) {
+                            ctx.lineTo(outerRadius * Math.cos(i * Math.PI / 2.5), outerRadius * Math.sin(i * Math.PI / 2.5));
+                            ctx.lineTo(innerRadius * Math.cos((i + 0.5) * Math.PI / 2.5), innerRadius * Math.sin((i + 0.5) * Math.PI / 2.5));
+                        }
+                        ctx.closePath();
+                        break;
+                    case 'pentagon':
+                        for (let i = 0; i < 5; i++) {
+                            const angle = (i * Math.PI * 2 / 5) - Math.PI / 10; // Adjust for upright pentagon
+                            ctx.lineTo(this.size / 2 * Math.cos(angle), this.size / 2 * Math.sin(angle));
+                        }
+                        ctx.closePath();
+                        break;
+                }
+                ctx.fill();
+                ctx.restore();
+
+                // Draw the name
+                ctx.save();
+                ctx.fillStyle = 'white';
+                ctx.font = `bold 28px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText(this.name, this.x, this.y + (this.size / 10));
+                ctx.restore();
+            }           
+
+            static randomShape() {
+                const shapes = ['circle', 'square', 'triangle', 'hex', 'star', 'pentagon'];
+                return shapes[Math.floor(Math.random() * shapes.length)];
+            }
+            
+            determineType(name) {
+                const lowerName = name.toLowerCase();
+                if (lowerName.includes('老师') || lowerName.includes('teacher')) return 'teacher';
+                if (lowerName.includes('学霸') || lowerName.includes('topstudent')) return 'topstudent';
+                if (lowerName.includes('作业') || lowerName.includes('homework')) return 'homework';
+                if (lowerName.includes('考试') || lowerName.includes('exam')) return 'exam';
+                if (lowerName.includes('论文') || lowerName.includes('paper')) return 'paper';
+                if (lowerName.includes('家长') || lowerName.includes('parent')) return 'parent';
+                if (lowerName.includes('hr')) return 'hr';
+                if (lowerName.includes('甲方') || lowerName.includes('client')) return 'client';
+                if (lowerName.includes('ppt')) return 'ppt';
+                if (lowerName.includes('kpi')) return 'kpi';
+                if (lowerName.includes('会议') || lowerName.includes('meeting')) return 'meeting';
+                if (lowerName.includes('工位') || lowerName.includes('desk')) return 'desk';
+                if (lowerName.includes('考勤机') || lowerName.includes('clock')) return 'clock';
+                if (lowerName.includes('客户') || lowerName.includes('customer')) return 'customer';
+                if (lowerName.includes('老板') || lowerName.includes('boss')) return 'boss';
+                if (lowerName.includes('同事') || lowerName.includes('coworker')) return 'coworker';
+                if (lowerName.includes('最讨厌的对象') || lowerName.includes('most hated')) return 'mostHated';
+                return 'normal';
+            }
+            
+            getInitialHealth() {
+                switch(this.type) {
+                    case 'boss': return this.size * 3;
+                    case 'coworker': return this.size * 1.5;
+                    case 'star': return this.size * 5;
+                    case 'pentagon': return this.size * 5;
+                    case 'mostHated': return this.size * 10;
+                    default: return this.size;
+                }
+            }
+            
+            takeDamage(damage) {
+                this.health -= damage;
+                this.showDialog();
+                this.hitTimer = 0.5;
+                this.hitColor = '#ffffff';
+                gameState.rage = Math.min(100, gameState.rage + 8);
+                gameState.multiHitCount++;
+                gameState.multiHitTimer = 2;
+                document.getElementById('multiHitCounter').style.display = 'block';
+                document.getElementById('multiHitCounter').textContent = `连击：${gameState.multiHitCount}`;
+            }
+            
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.rotation += 0.02;
+                this.nameOffset = Math.sin(Date.now() * 0.005) * 5;
+                
+                if (this.x < this.size/2 || this.x > canvas.width - this.size/2) {
+                    this.velocity.x *= -0.8;
+                    this.x = Math.max(this.size/2, Math.min(canvas.width - this.size/2, this.x));
+                }
+                if (this.y < this.size/2 || this.y > canvas.height - this.size/2) {
+                    this.velocity.y *= -0.8;
+                    this.y = Math.max(this.size/2, Math.min(canvas.height - this.size/2, this.y));
+                }
+                
+                this.velocity.x *= 0.999;
+                this.velocity.y *= 0.999;
+                
+                switch(this.type) {
+                    case 'ex':
+                        const dx = gameState.mouseX - this.x;
+                        const dy = gameState.mouseY - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist > 30) {
+                            this.velocity.x += (dx / dist) * 0.18;
+                            this.velocity.y += (dy / dist) * 0.18;
+                        }
+                        break;
+                }
+                
+                if (this.dialogQueue && this.dialogQueue.length) {
+                    this.dialogQueue.forEach(d=>d.timer-=0.016);
+                    while(this.dialogQueue.length && this.dialogQueue[0].timer<=0) this.dialogQueue.shift();
+                    this.dialogBubble = this.dialogQueue.map(d=>d.text).join('\n');
+                    if (!this.dialogQueue.length) this.dialogBubble = null;
+                }
+                
+                if (this.hitTimer > 0) {
+                    this.hitTimer -= 0.016;
+                }
+            }
+            
+            showDialog(isDeath) {
+                const dialogs = {
+                    teacher: isDeath ? ["老师：下次记得交作业！(消失)", "老师：你这次考得不错，下次更难！", "老师：放学别走！"] : ["作业交了吗？", "考试周要来了！", "你又迟到了！", "下课别走，来办公室一趟。", "这题会不会？", "今晚记得复习！", "Aduh, so many homework lah!", "补习班等你咯！"],
+                    topstudent: isDeath ? ["学霸：你赢了我？不科学！", "学霸：下次再来PK！"] : ["这题很简单啦~", "你要不要抄我的？", "我已经复习三遍了。", "考试稳A+！", "你昨晚复习了吗？", "Geng lah你！"],
+                    homework: isDeath ? ["作业：终于不用写我了！", "作业：下次还会有的！"] : ["今晚要交哦！", "老师在催了！", "你是不是又忘了？", "写不完就别睡觉！", "Deadline到咯！"],
+                    exam: isDeath ? ["考试：你赢了这次，下次见！", "考试：下学期再来！"] : ["考试周要来了，准备好了吗？", "这题送分啦！", "你会不会？", "考场见！", "Aduh, so stress lah!"],
+                    paper: isDeath ? ["论文：我会回来的！", "论文：查重不过重写！"] : ["查重过了吗？", "格式改了吗？", "导师催了！", "今晚通宵写论文！"],
+                    parent: isDeath ? ["家长：下次考好点！", "家长：别玩游戏了！"] : ["考不到A不准玩手机！", "你是不是又在玩游戏？", "成绩出来了，准备挨骂！", "早点回家吃饭！"],
+                    boss: isDeath ? ["老板：你们都得加班！(消失)", "老板：我还会回来的！"] : ["KPI还不够！", "这个需求明天上线！", "今晚加班！", "Lunch break? No, got meeting!", "Aiyo, why so slow one?"],
+                    coworker: isDeath ? ["同事：终于解脱了...", "同事：我下辈子不做码农了！"] : ["这个bug不是我写的！", "又要开会，救命！", "今晚又要加班咯...", "你做完了吗？我等你merge PR~"],
+                    hr: isDeath ? ["HR：下次再来面试！", "HR：福利等下发！"] : ["五险一金了解一下？", "请假流程走一遍。", "绩效考核要开始了！", "下个月调岗。"],
+                    client: isDeath ? ["甲方：下次还要改！", "甲方：预算砍一半！"] : ["这个需求再改一下。", "我们要加新功能。", "下周上线可以吗？", "你们很geng咧！"],
+                    ppt: isDeath ? ["PPT：终于不用改了！", "PPT：下次还会有！"] : ["PPT今晚要交！", "再美化一下。", "老板要动画！", "字体统一没？"],
+                    kpi: isDeath ? ["KPI：下季度见！", "KPI：你以为结束了吗？"] : ["KPI还差一点！", "目标要翻倍！", "老板在看你哦！", "冲业绩啦！"],
+                    meeting: isDeath ? ["会议：终于结束了！", "会议：下次再约！"] : ["开会时间到！", "PPT准备好了吗？", "老板要发言了！", "又要头脑风暴！"],
+                    desk: isDeath ? ["工位：终于可以休息了！", "工位：下次还会有新人！"] : ["工位怎么又乱了？", "记得打卡！", "今天谁坐我旁边？", "午休时间到！"],
+                    clock: isDeath ? ["考勤机：下次别迟到！", "考勤机：打卡失败！"] : ["记得打卡！", "迟到要扣钱！", "工时不够哦！", "老板在看着你！"],
+                    customer: isDeath ? ["客户：下次还找你们！", "客户：服务不错！"] : ["客户要改需求！", "客户要见面！", "客户说要便宜点！", "客户满意最重要！"],
+                    mostHated: isDeath ? ["你终于...解脱了...", "我还会回来的！你等着！"] : ["你为什么讨厌我？！", "来啊，互相伤害啊！", "别以为你赢了！", "我就在这里，来打我啊！", "Aduh, why you hate me so much?!"],
+                    normal: isDeath ? ["毁灭！", "再见世界...", "Game over lah!"] : ["啊！好痛！", "为什么是我？", "我还会回来的！", "不要啊！", "救命！", "我投降！", "Aduh sakit lah!"]
+                };
+                const typeDialogs = dialogs[this.type] || dialogs.normal;
+                const msg = typeDialogs[Math.floor(Math.random() * typeDialogs.length)];
+                if (!this.dialogQueue) this.dialogQueue = [];
+                this.dialogQueue.push({text: msg, timer: 3});
+                if (this.dialogQueue.length > 3) this.dialogQueue.shift();
+                this.dialogBubble = this.dialogQueue.map(d=>d.text).join('\n');
+                this.dialogTimer = 3;
+            }
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+        }
+        
+        class Projectile {
+            constructor(x, y, targetX, targetY, type = null, rageMultiplier = 1) {
+                this.x = x;
+                this.y = y;
+                this.type = type || Projectile.randomType();
+                this.setTypeProps();
+                this.power *= rageMultiplier;
+                this.rageMultiplier = rageMultiplier;
+                const dx = targetX - x;
+                const dy = targetY - y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                this.velocity = {
+                    x: (dx / distance) * this.speed,
+                    y: (dy / distance) * this.speed
+                };
+                this.trail = [];
+                this.life = 1;
+            }
+            
+            static randomType() {
+                const types = ['normal', 'fast', 'bouncy', 'zigzag'];
+                return types[Math.floor(Math.random() * types.length)];
+            }
+            
+            setTypeProps() {
+                switch(this.type) {
+                    case 'fast':
+                        this.power = 30; this.speed = 25; this.size = 4; this.color = '#4ecdc4'; break;
+                    case 'bouncy':
+                        this.power = 40; this.speed = 10; this.size = 7; this.color = '#feca57'; break;
+                    case 'zigzag':
+                        this.power = 20; this.speed = 12; this.size = 5; this.color = '#6c5ce7'; this.zigzagAngle = 0; break;
+                    default:
+                        this.power = 50; this.speed = 15; this.size = 5; this.color = '#ff6b6b'; break;
+                }
+            }
+            
+            update() {
+                if (this.type === 'zigzag') {
+                    this.zigzagAngle += 0.3;
+                    this.x += this.velocity.x + Math.sin(this.zigzagAngle) * 3;
+                    this.y += this.velocity.y;
+                } else {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                }
+                this.life -= 0.01;
+                this.trail.push({x: this.x, y: this.y, life: this.life});
+                if (this.trail.length > 5) this.trail.shift();
+                // Bouncy反弹
+                if (this.type === 'bouncy') {
+                    if (this.x < this.size || this.x > canvas.width - this.size) this.velocity.x *= -1;
+                    if (this.y < this.size || this.y > canvas.height - this.size) this.velocity.y *= -1;
+                }
+                // Check collision with targets
+                gameState.targets.forEach((target, index) => {
+                    const dx = this.x - target.x;
+                    const dy = this.y - target.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    if (distance < target.size + this.size) {
+                        this.explode(target, index);
+                    }
+                });
+                return this.life > 0 && this.x > -100 && this.x < canvas.width + 100 && this.y > -100 && this.y < canvas.height + 100;
+            }
+            
+            explode(target, targetIndex) {
+                const baseCount = 30;
+                let comboMultiplier = 1 + Math.min(gameState.multiHitCount, 10) * 0.1;
+                const count = Math.floor(baseCount * this.rageMultiplier * comboMultiplier);
+                let death = false;
+                if (target.health - this.power <= 0) death = true;
+                for (let i = 0; i < (death ? count*2 : count); i++) {
+                    gameState.particles.push({
+                    x: this.x,
+                    y: this.y,
+                        velocity: {
+                            x: (Math.random() - 0.5) * 28 * this.rageMultiplier * (death ? 1.5 : 1),
+                            y: (Math.random() - 0.5) * 28 * this.rageMultiplier * (death ? 1.5 : 1)
+                        },
+                        size: Math.random() * (death ? 12 : 6) + 2,
+                        color: death ? (Math.random() < 0.5 ? '#fff' : target.color) : target.color,
+                        life: death ? 2 : 1.2
+                    });
+                }
+                target.takeDamage(this.power);
+                if (target.health <= 0) {
+                    target.showDialog(true);
+                    gameState.targets.splice(targetIndex, 1);
+                    gameState.score += target.size * gameState.combo;
+                    gameState.combo++;
+                    screenShake();
+                }
+                this.life = 0;
+                document.body.style.background = '#ff2222';
+                setTimeout(()=>{document.body.style.background='';}, 60);
+            }
+            
+            draw() {
+                ctx.save();
+                // 拖尾
+                for(let i=this.trail.length-1;i>=0;i--){
+                    const t = this.trail[i];
+                    const p = i/this.trail.length;
+                    ctx.globalAlpha = 0.18 + 0.22*p;
+                        ctx.beginPath();
+                    ctx.arc(t.x, t.y, this.size*1.2*(0.7+p), 0, Math.PI*2);
+                    ctx.fillStyle = `rgba(255,30,30,${0.18+0.22*p})`;
+                    ctx.shadowColor = p>0.7 ? '#ffe066' : '#ff6b6b';
+                    ctx.shadowBlur = 16*p;
+                    ctx.fill();
+                }
+                ctx.globalAlpha = 1;
+                // 主体
+                ctx.shadowColor = '#ff1e1e';
+                ctx.shadowBlur = 32;
+                ctx.fillStyle = '#ff2222';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size*1.18, 0, Math.PI*2);
+                ctx.fill();
+                // 火焰边缘
+                ctx.shadowColor = '#ffe066';
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size*1.5, 0, Math.PI*2);
+                ctx.fillStyle = 'rgba(255,230,102,0.18)';
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+        
+        function createTargetExplosion(target) {
+            // Create massive explosion
+            for (let i = 0; i < 50; i++) {
+                gameState.particles.push({
+                    x: target.x,
+                    y: target.y,
+                    velocity: {
+                        x: (Math.random() - 0.5) * 30,
+                        y: (Math.random() - 0.5) * 30
+                    },
+                    size: Math.random() * 8 + 3,
+                    color: target.color,
+                    life: 1.5
+                });
+            }
+            // SLOW MOTION for big targets
+            if (target.size > 50) {
+                createSlowMotion(0.3, 1000); // 30%速度持续1秒
+            }
+            // Create shockwave
+            gameState.explosions.push({
+                x: target.x,
+                y: target.y,
+                size: 0,
+                maxSize: target.size * 4,
+                life: 2,
+                shockwave: true
+            });
+        }
+        
+        function spawnNamedTarget() {
+            const availableNames = targetNames;
+            const name = availableNames[Math.floor(Math.random() * availableNames.length)];
+            const suffixes = ['', ' Jr', ' II', ' III', ' Alpha', ' Beta', ' Prime', ' Ultra'];
+            const randomSuffix = suffixes[Math.floor(Math.random() * suffixes.length)];
+            const finalName = name + randomSuffix;
+            // 多样化颜色
+            const colorPalettes = [
+                ['#ff6b6b', '#4ecdc4', '#45b7d1'],
+                ['#feca57', '#ff9ff3', '#6c5ce7'],
+                ['#00b894', '#fdcb6e', '#d63031'],
+                ['#0984e3', '#fd79a8', '#00b894']
+            ];
+            const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)];
+            const color = palette[Math.floor(Math.random() * palette.length)];
+            const size = Math.random() * 40 + 30;
+            const x = Math.random() * (canvas.width - size * 2) + size;
+            const y = Math.random() * (canvas.height - size * 2) + size;
+	    console.log('生成目标', {x, y, size, color, name});
+            gameState.targets.push(new Target(x, y, size, color, finalName, {
+                x: (Math.random() - 0.5) * 4,
+                y: (Math.random() - 0.5) * 4
+            }));
+        }
+        
+        function spawnTargetWave() {
+            const waveSize = Math.min(8, targetNames.length + 3); // Increased wave size and made it scale slightly with names
+            for (let i = 0; i < waveSize; i++) {
+                setTimeout(() => {
+                    spawnNamedTarget();
+                }, i * 40); // Slightly reduced delay for faster generation
+            }
+            showDestructionText('TARGET WAVE INCOMING!');
+        }
+        
+        function createBlackHole() {
+            gameState.blackHoles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: 30,
+                maxSize: 80,
+                growing: true,
+                life: 10
+            });
+            showDestructionText('BLACK HOLE DEPLOYED!');
+        }
+        
+        function triggerMegaBlast() {
+            if (gameState.targets.length > 0) {
+                const target = gameState.targets[Math.floor(Math.random() * gameState.targets.length)];
+                gameState.explosions.push({
+                    x: target.x,
+                    y: target.y,
+                    size: 0,
+                    maxSize: 300,
+                    life: 3,
+                    megablast: true
+                });
+                showDestructionText('MEGA BLAST!');
+                screenShake();
+            }
+        }
+        
+        function showDestructionText(text) {
+            const element = document.createElement('div');
+            element.className = 'destruction-text';
+            element.textContent = text;
+            document.body.appendChild(element);
+            
+            setTimeout(() => element.remove(), 2000);
+        }
+        
+        function screenShake() {
+            document.body.classList.add('shake');
+            setTimeout(() => document.body.classList.remove('shake'), 500);
+        }
+        
+        function updateGame() {
+            // Update targets
+            gameState.targets.forEach(target => target.update());
+            
+            // Update projectiles
+            gameState.projectiles = gameState.projectiles.filter(projectile => projectile.update());
+            
+            // Update particles
+            gameState.particles = gameState.particles.filter(particle => {
+                particle.x += particle.velocity.x;
+                particle.y += particle.velocity.y;
+                particle.velocity.x *= 0.96;
+                particle.velocity.y *= 0.96;
+                particle.life -= 0.018;
+                return particle.life > 0;
+            });
+            
+            // Update explosions
+            gameState.explosions = gameState.explosions.filter(explosion => {
+                explosion.size += (explosion.maxSize - explosion.size) * 0.1;
+                explosion.life -= 0.02;
+                return explosion.life > 0;
+            });
+            
+            // Update black holes
+            gameState.blackHoles = gameState.blackHoles.filter(blackHole => {
+                if (blackHole.growing && blackHole.size < blackHole.maxSize) {
+                    blackHole.size += 2;
+                } else {
+                    blackHole.growing = false;
+                    blackHole.life -= 0.01;
+                }
+                
+                // Black hole gravity effect
+                gameState.targets.forEach((target, index) => {
+                    const dx = blackHole.x - target.x;
+                    const dy = blackHole.y - target.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < blackHole.size) {
+                        // Target consumed
+                        showDestructionText(`${target.name.toUpperCase()} CONSUMED!`);
+                        usedNames.push(target.name);
+                        gameState.targets.splice(index, 1);
+                        gameState.score += 500;
+                        screenShake();
+                    } else if (distance < blackHole.size * 3) {
+                        // Gravitational pull
+                        const force = blackHole.size / distance * 0.5;
+                        target.velocity.x += (dx / distance) * force;
+                        target.velocity.y += (dy / distance) * force;
+                    }
+                });
+                
+                return blackHole.life > 0;
+            });
+            
+            // 增加目标生成频率，并移除数量限制
+            if (Math.random() < 0.01 && gameState.targets.length < 20) { // 提高生成概率，增加最大目标数
+                spawnNamedTarget();
+            }
+            
+            // 更新太空垃圾
+            gameState.spaceDebris = gameState.spaceDebris.filter(debris => {
+                debris.update();
+                return true;
+            });
+
+            // 随机生成太空垃圾
+            if (Math.random() < 0.005) {
+                gameState.spaceDebris.push(new SpaceDebris(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+
+            // 随机生成UFO
+            if (Math.random() < 0.001) {
+                gameState.ufos.push(new UFO());
+            }
+            
+            if (gameState.multiHitTimer > 0) {
+                gameState.multiHitTimer -= 0.016;
+                if (gameState.multiHitTimer <= 0) {
+                    gameState.multiHitCount = 0;
+                    document.getElementById('multiHitCounter').style.display = 'none';
+                }
+            }
+            
+            // 愤怒模式倒计时
+            if (gameState.isRageMode) {
+                gameState.rageModeTimer -= 0.016;
+                if (gameState.rageModeTimer <= 0) {
+                    gameState.isRageMode = false;
+                    document.body.classList.remove('red-rage');
+                    const btn = document.getElementById('rageBtn');
+                    btn.disabled = false;
+                    btn.textContent = '😡 愤怒模式';
+                }
+            }
+            // 机关枪模式倒计时
+            if (gameState.isGunMode) {
+                gameState.gunModeTimer -= 0.016;
+                if (gameState.gunModeTimer <= 0) {
+                    gameState.isGunMode = false;
+                    const btn = document.getElementById('gunBtn');
+                    btn.disabled = false;
+                    btn.textContent = '🔫 机关枪模式';
+                } else {
+                    // 自动发射
+                    gameState.gunModeFireCD -= 0.016;
+                    if (gameState.gunModeFireCD <= 0) {
+                        for(let i=0;i<3;i++){
+                          const angle = Math.random()*Math.PI*2;
+                          const dist = 80+Math.random()*60;
+                          const tx = gameState.mouseX + Math.cos(angle)*dist;
+                          const ty = gameState.mouseY + Math.sin(angle)*dist;
+                          fireProjectile(tx, ty, gameState.isRageMode);
+                        }
+                        gameState.gunModeFireCD = 0.08;
+                    }
+                }
+            }
+            
+            if (gameState.multiHitCount >= 3) {
+                const counter = document.getElementById('multiHitCounter');
+                counter.style.animation = 'flashCombo 0.5s infinite alternate';
+                counter.style.fontSize = '28px';
+            } else {
+                const counter = document.getElementById('multiHitCounter');
+                counter.style.animation = '';
+                counter.style.fontSize = '18px';
+            }
+            
+            updateHUD();
+        }
+        
+        function drawGame() {
+            // Clear canvas
+            ctx.fillStyle = 'rgba(0, 0, 10, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw stars
+            gameState.stars.forEach(star => {
+                star.twinkle += 0.1;
+                const alpha = (Math.sin(star.twinkle) + 1) * 0.5;
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            
+            // Draw targets
+            gameState.targets.forEach(target => target.draw());
+            
+            // Draw projectiles
+            gameState.projectiles.forEach(projectile => projectile.draw());
+            
+            // Draw particles
+            for (const particle of gameState.particles) {
+                ctx.save();
+                ctx.globalAlpha = particle.life;
+                ctx.fillStyle = particle.color;
+                ctx.beginPath();
+                ctx.arc(particle.x, particle.y, particle.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+            
+            // Draw explosions
+            gameState.explosions.forEach(explosion => {
+                const alpha = explosion.life;
+                if (explosion.megablast) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+                    ctx.lineWidth = 10;
+                } else if (explosion.shockwave) {
+                    ctx.strokeStyle = `rgba(255, 107, 107, ${alpha * 0.5})`;
+                    ctx.lineWidth = 5;
+                } else {
+                    ctx.fillStyle = `rgba(255, 165, 0, ${alpha * 0.3})`;
+                }
+                
+                ctx.beginPath();
+                ctx.arc(explosion.x, explosion.y, explosion.size, 0, Math.PI * 2);
+                if (explosion.megablast || explosion.shockwave) {
+                    ctx.stroke();
+                } else {
+                    ctx.fill();
+                }
+            });
+            
+            // Draw black holes
+            gameState.blackHoles.forEach(blackHole => {
+                // Event horizon
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(blackHole.x, blackHole.y, blackHole.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Accretion disk
+                for (let i = 0; i < 3; i++) {
+                    ctx.strokeStyle = `rgba(255, 165, 0, ${0.3 - i * 0.1})`;
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(blackHole.x, blackHole.y, blackHole.size + i * 20, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+            
+            // 绘制太空垃圾
+            gameState.spaceDebris.forEach(debris => debris.draw());
+
+            // 绘制UFO
+            gameState.ufos.forEach(ufo => ufo.draw());
+        }
+        
+        function updateHUD() {
+            document.getElementById('score').textContent = `🌟 DESTRUCTION SCORE: ${gameState.score.toLocaleString()}`;
+            document.getElementById('combo').textContent = `💥 COMBO: x${gameState.combo}`;
+            document.getElementById('targets').textContent = `🎯 TARGETS: ${gameState.targets.length}`;
+            document.getElementById('rageFill').style.height = `${gameState.rage}%`;
+            document.getElementById('rageFill').style.background = `linear-gradient(to top, #ff6b6b, #ff4757, #ff3838, #ff1e1e${gameState.rage > 80 ? ', #ff0000' : ''})`;
+        }
+        
+        function resetSimulation() {
+            gameState.targets = [];
+            gameState.projectiles = [];
+            gameState.particles = [];
+            gameState.blackHoles = [];
+            gameState.explosions = [];
+            gameState.score = 0;
+            gameState.combo = 1;
+            // 移除 usedNames 重置
+            // 生成更多初始目标
+            for (let i = 0; i < Math.min(10, targetNames.length); i++) {
+                spawnNamedTarget();
+            }
+            showDestructionText('SIMULATION RESET!');
+        }
+        
+        // --- MOUSE & INPUT HANDLING ---
+
+        // Update crosshair position
+        function updateCrosshair(e) {
+            const crosshair = document.getElementById('crosshair');
+            let x, y;
+            if (e) {
+                x = e.clientX;
+                y = e.clientY;
+                gameState.mouseX = x;
+                gameState.mouseY = y;
+            } else {
+                x = gameState.mouseX;
+                y = gameState.mouseY;
+            }
+            crosshair.style.left = x + 'px';
+            crosshair.style.top = y + 'px';
+        }
+
+        document.addEventListener('mousemove', updateCrosshair);
+
+        // Charging and firing logic
+        canvas.addEventListener('mousedown', (e) => {
+            if (!gameState.isPlaying) return;
+            // 直接发射，不需要蓄力
+            fireProjectile(gameState.mouseX, gameState.mouseY);
+        });
+
+        function fireProjectile(x, y, isRage) {
+            let rageMultiplier = 1 + gameState.rage / 100;
+            if (gameState.isRageMode || isRage) rageMultiplier = 2;
+            // 愤怒模式下多发一颗
+            if (gameState.isRageMode || isRage) {
+                gameState.projectiles.push(new Projectile(canvas.width / 2, canvas.height, x, y, null, rageMultiplier));
+                // 额外一颗稍微偏移
+                const dx = x - canvas.width/2, dy = y - canvas.height;
+                const angle = Math.atan2(dy, dx) + 0.12;
+                const tx2 = canvas.width/2 + Math.cos(angle)*Math.sqrt(dx*dx+dy*dy);
+                const ty2 = canvas.height + Math.sin(angle)*Math.sqrt(dx*dx+dy*dy);
+                gameState.projectiles.push(new Projectile(canvas.width / 2, canvas.height, tx2, ty2, null, rageMultiplier));
+            } else {
+                gameState.projectiles.push(new Projectile(canvas.width / 2, canvas.height, x, y, null, rageMultiplier));
+            }
+        }
+
+        // Resize canvas on window resize
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            // Re-initialize stars to fill new space
+            if (gameState.isPlaying) {
+                gameState.stars = [];
+                for (let i = 0; i < 200; i++) {
+                    gameState.stars.push({
+                        x: Math.random() * canvas.width,
+                        y: Math.random() * canvas.height,
+                        size: Math.random() * 2 + 0.5,
+                        twinkle: Math.random() * Math.PI * 2
+                    });
+                }
+            }
+        });
+
+        // Set initial crosshair position
+        updateCrosshair({clientX: window.innerWidth / 2, clientY: window.innerHeight / 2});
+
+        // Optional: allow pressing Enter to start game
+        const nameInput = document.getElementById('nameInput');
+        nameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                startGame();
+            }
+        });
+
+        function gameLoop() {
+            if (!gameState.isPlaying) return;
+            updateGame();
+            drawGame();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 添加太空垃圾类
+        class SpaceDebris {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 20 + 10;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 2,
+                    y: (Math.random() - 0.5) * 2
+                };
+                this.points = Math.floor(Math.random() * 3) + 1;
+            }
+
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+                this.rotation += 0.02;
+
+                // 边界检查
+                if (this.x < -this.size) this.x = canvas.width + this.size;
+                if (this.x > canvas.width + this.size) this.x = -this.size;
+                if (this.y < -this.size) this.y = canvas.height + this.size;
+                if (this.y > canvas.height + this.size) this.y = -this.size;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                
+                // 绘制太空垃圾
+                ctx.fillStyle = '#666';
+                ctx.beginPath();
+                ctx.moveTo(-this.size, -this.size);
+                ctx.lineTo(this.size, -this.size);
+                ctx.lineTo(this.size/2, this.size);
+                ctx.closePath();
+                ctx.fill();
+                
+                ctx.restore();
+            }
+        }
+
+        // 添加UFO类
+        class UFO {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = -50;
+                this.size = 40;
+                this.velocity = {
+                    x: (Math.random() - 0.5) * 3,
+                    y: 1
+                };
+                this.power = Math.random() < 0.5 ? 'shield' : 'speed';
+            }
+
+            update() {
+                this.x += this.velocity.x;
+                this.y += this.velocity.y;
+
+                if (this.y > canvas.height + 50) {
+                    return false;
+                }
+                return true;
+            }
+
+            draw() {
+                // 绘制UFO
+                ctx.fillStyle = '#4ecdc4';
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y, this.size, this.size/2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制光效
+                ctx.strokeStyle = '#4ecdc4';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.ellipse(this.x, this.y + this.size/2, this.size/2, this.size/4, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        // 新函数：慢动作
+        function createSlowMotion(speed, duration) {
+            document.body.classList.add('slow-motion');
+            document.body.style.setProperty('--slow-speed', speed);
+            setTimeout(() => {
+                document.body.classList.remove('slow-motion');
+            }, duration);
+        }
+
+        // 按钮事件监听
+        window.addEventListener('DOMContentLoaded',()=>{
+          document.getElementById('rageBtn').onclick = function() {
+            if (!gameState.isRageMode && gameState.rage >= 100) {
+              gameState.isRageMode = true;
+              gameState.rageModeTimer = 15;
+              document.body.classList.add('red-rage');
+              this.disabled = true;
+              this.textContent = '😡 愤怒中...';
+              gameState.rage = 0;
+              document.getElementById('rageFill').style.height = '0%';
+            }
+          };
+          document.getElementById('gunBtn').onclick = function() {
+            if (!gameState.isGunMode) {
+              gameState.isGunMode = true;
+              gameState.gunModeTimer = 10;
+              this.disabled = true;
+              this.textContent = '🔫 扫射中...';
+            }
+          };
+        });
+
+        // 5. 增强交互方式
+        // 右键=散弹，双击=超级爆炸，普通点击=基础攻击
+        canvas.addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            if (!gameState.isPlaying) return;
+            // 散弹：5颗子弹，角度分散
+            const baseAngle = Math.atan2(gameState.mouseY - canvas.height, gameState.mouseX - canvas.width/2);
+            for (let i = -2; i <= 2; i++) {
+                const angle = baseAngle + i * 0.18;
+                const dist = 400;
+                const tx = canvas.width/2 + Math.cos(angle)*dist;
+                const ty = canvas.height + Math.sin(angle)*dist;
+                fireProjectile(tx, ty);
+            }
+        });
+        /*
+        canvas.addEventListener('dblclick', function(e) {
+            if (!gameState.isPlaying) return;
+            // 超级爆炸：在鼠标处生成大爆炸
+            gameState.explosions.push({
+                x: gameState.mouseX,
+                y: gameState.mouseY,
+                size: 0,
+                maxSize: 400,
+                life: 2,
+                megablast: true
+            });
+            showDestructionText('超级爆炸!');
+            screenShake();
+        });
+        */
+
+        // 交互逻辑：选择身份后动态渲染对手类型按钮，下一步后才显示名字
+        window.addEventListener('DOMContentLoaded',()=>{
+          const playerTypeSelect = document.getElementById('playerTypeSelect');
+          const opponentSelect = document.getElementById('opponentSelect');
+          const nameInput = document.getElementById('nameInput');
+          const startBtn = document.getElementById('startGame');
+          const guide = document.getElementById('gameGuide');
+          const nameInputTip = document.getElementById('nameInputTip');
+          const opponentBtns = document.getElementById('opponentBtns');
+          const nextBtn = document.getElementById('opponentNext');
+          nameInput.style.display = 'none';
+          startBtn.style.display = 'none';
+          guide.style.display = 'none';
+          nameInputTip.style.display = 'none';
+          opponentSelect.style.display = 'none';
+          window.selectedOpponentTypes = [];
+          window.selectedPlayerType = null;
+          // 身份选择
+          playerTypeSelect.querySelectorAll('button').forEach(btn=>{
+            btn.onclick = function(){
+              window.selectedPlayerType = this.getAttribute('data-player');
+              playerTypeSelect.style.display = 'none';
+              opponentSelect.style.display = 'block';
+              // 渲染对应对手类型
+              let types = [];
+              if(window.selectedPlayerType==='student'){
+                types = [
+                  {type:'teacher',label:'老师'},
+                  {type:'homework',label:'作业'},
+                  {type:'parent',label:'家长'},
+                  {type:'mostHated',label:'你最讨厌的对象是谁?'}
+                ];
+              }else{
+                types = [
+                  {type:'boss',label:'老板'},
+                  {type:'hr',label:'HR'},
+                  {type:'meeting',label:'会议'},
+                  {type:'mostHated',label:'你最讨厌的对象是谁?'}
+                ];
+              }
+              opponentBtns.innerHTML = types.map(t=>`<button class='control-btn' data-type='${t.type}'>${t.label}</button>`).join('');
+              window.selectedOpponentTypes = [];
+              opponentBtns.querySelectorAll('button').forEach(btn=>{
+                btn.onclick = function(){
+                  const type = this.getAttribute('data-type');
+                  if(window.selectedOpponentTypes.includes(type)){
+                    window.selectedOpponentTypes = window.selectedOpponentTypes.filter(t=>t!==type);
+                    this.classList.remove('selected');
+                  }else{
+                    window.selectedOpponentTypes.push(type);
+                    this.classList.add('selected');
+                  }
+                };
+              });
+            };
+          });
+          // 下一步
+          nextBtn.onclick = function(){
+            if(window.selectedOpponentTypes.length===0){
+              alert('请至少选择一个对手类型！');
+              return;
+            }
+            opponentSelect.style.display = 'none';
+            nameInput.style.display = 'block';
+            startBtn.style.display = 'inline-block';
+            guide.style.display = 'block';
+            nameInputTip.style.display = 'block';
+            const typeNames = window.selectedOpponentTypes.map(t=>{
+              const map = {
+                teacher:'老师',topstudent:'学霸',homework:'作业',exam:'考试',paper:'论文',parent:'家长',
+                boss:'老板',coworker:'同事',hr:'HR',client:'甲方',ppt:'PPT',kpi:'KPI',meeting:'会议',desk:'工位',clock:'考勤机',customer:'客户',
+                mostHated:'你最讨厌的对象'
+              };
+              return map[t]||t;
+            });
+            nameInput.placeholder = `请输入${typeNames.join('、')}的名字，每行一个...`;
+          };
+        });
+    </script>
+</body>
+</html>
