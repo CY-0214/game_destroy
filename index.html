@@ -1290,6 +1290,11 @@
                 }
             }, 100); // Fire every 100ms
         });
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!gameState.isPlaying) return;
+            updateCrosshair(e);
+        });
         canvas.addEventListener('touchend', (e) => {
             if (!gameState.isPlaying) return;
             gameState.isFiring = false;
